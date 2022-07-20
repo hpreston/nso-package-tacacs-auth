@@ -1,0 +1,48 @@
+module tacacs-config {
+
+  namespace "http://learning.cisco.com/tacacs-config";
+  prefix tacacs-config;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "External Auth with TACACS configuration details";
+
+  revision 2022-07-19 {
+    description
+      "Redesigned to add port and create a list of TACACS servers";
+  }
+
+  revision 2021-08-03 {
+    description
+      "Initial revision.";
+  }
+
+  list tacacs {
+    tailf:info "List of available TACACS servers";
+    key host;
+
+    leaf host {
+        tailf:info "The IP address for a TACACS host";
+        type inet:ipv4-address;
+    }
+
+    leaf port {
+        tailf:info "The port to access TACACS running server";
+        type uint16;
+    }
+
+    leaf secret {
+        tailf:info "The TACACS key to use when communicating with host";
+        type tailf:aes-256-cfb-128-encrypted-string;
+    }
+  }
+}

@@ -4,7 +4,7 @@ Any compliant TACACS server could be used with this integration, however this do
 This document assumes that a functioning TACACS device administration configuration is already in place, servicing network clients (switches, routers, firewalls), and focuses on the configuration specific to adding NSO.  
 
 ## Network Device / Resource Setup 
-In order for the Python script to successfully communicate with the TACACS server, it neesd to be added to the Network Resources in ISE, enabled for TACACS, and a shared-secret identified. 
+In order for the Python script to successfully communicate with the TACACS server, it needs to be added to the Network Resources in ISE, enabled for TACACS, and a shared-secret identified. 
 
 ![](resources/ise-nso-netdevice.png)
 

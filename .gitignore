@@ -1,0 +1,9 @@
+.idea
+.env
+logs/
+ncs-cdb/
+ncs.conf
+packages/tacacs-config/load-dir/
+README.ncs
+storedstate
+state/

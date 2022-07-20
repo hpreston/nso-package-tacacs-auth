@@ -2,9 +2,14 @@
 This project focuses on enabling TACACS based external authentication for Cisco NSO.  
 
 ## Background 
-External Authentication for is accomplished by creating some script that NSO will call whenever someeone tries to login.  NSO simply passes the credentials provided to the script as a standard input in the forom of `"[user;password;]\n"` and expects an output such as `accept ncsadmin ncsoper 1004 1004 /tmp`.  In this example the user will be placed into the groups `ncsadmin` and `ncsoper`.  
+External Authentication for NSO is accomplished by creating some script that NSO will call when someeone tries
+to login.  NSO simply passes the credentials provided to the script via standard input in the format
+`"[user;password;]\n"` and expects an output such as `accept ncsadmin ncsoper 1004 1004 /tmp`.
+In this example the user will be placed into the groups `ncsadmin` and `ncsoper`.  
 
-What is done in the external authentication script is irrelevant to NSO, all that matters is the output.  For example, this script would work fine, but result in any provided credentials passing authentication and being authorized for both admin and operator roles. 
+What is done in the external authentication script is irrelevant to NSO, all that matters is the output.
+For example, this script would work fine, but result in any provided credentials passing authentication and
+being authorized for both admin and operator roles. 
 
 ```python
 #! /usr/bin/env python3 
@@ -13,21 +18,30 @@ accept = "accept ncsadmin ncsoper 1004 1004 /tmp"
 print(accept)
 ```
 
-> For more details on how external authentication works, see the documentation at `doc/html/nso_admin_guide/ug.aaa.External_authentication.html` (docs included with NSO installation).  Also, a presentation on access control with NSO is included in the repo [NSODevDays2020-NSO-Access-Control-Role-based-and-Resource-based-Access.pdf](resources/NSODevDays2020-NSO-Access-Control-Role-based-and-Resource-based-Access.pdf)
+> For more details on how external authentication works, see the documentation at
+`$NCS_DIR/doc/html/nso_admin_guide/ug.aaa.External_authentication.html` from your NSO installation.
+Also, a presentation on access control with NSO is included in the repo
+[NSODevDays2020-NSO-Access-Control-Role-based-and-Resource-based-Access.pdf](resources/NSODevDays2020-NSO-Access-Control-Role-based-and-Resource-based-Access.pdf)
 
-The goals for this project is to leverage the same AAA infrastructure used for network device administrator for NSO, namely TACACS (Cisco ISE).  The Python library [`tacacs_plus`](https://github.com/ansible/tacacs_plus) is used to communicate with the TACACS server. 
+The goals for this project is to leverage the same AAA infrastructure used for network device
+administrator for NSO, namely TACACS (Cisco ISE).
+The Python library [`tacacs_plus`](https://github.com/ansible/tacacs_plus) is used to communicate
+with the TACACS server. 
 
 ## Guides
 The following detailed guides have been written on how to use this service. 
 
-* [Preparing TACACS Server - Cisco ISE](README-setup-tacacs-ise.md): How to setup Cisco ISE to receive and responde to NSO authentication requests from this service.
-* [How the External Authentication Works](README-deepdive-tacacs-auth.md): A technical deep dive into this service works.
-* [How to Deploy and Use the tacacs-auth Service](README-tacacs-auth-installation.md): A walkthrough on how to install the tacacs-auth service to NSO
-* [Troubleshooting External Authentication with Logs](README-troubleshooting-logs.md): A review of how to troubleshoot the external authentication with logs
+* [Preparing TACACS Server - Cisco ISE](README-setup-tacacs-ise.md). How to setup Cisco ISE to receive and responde to NSO authentication requests from this service.
+* [How the External Authentication Works](README-deepdive-tacacs-auth.md). A technical deep dive into this service works.
+* [How to Deploy and Use the tacacs-auth Service](README-tacacs-auth-installation.md). A walk through on how to install the tacacs-auth service to NSO
+* [Troubleshooting External Authentication with Logs](README-troubleshooting-logs.md). A review of how to troubleshoot the external authentication with logs
 
-## Basic External Authentication with TACAS Usage
+## Basic External Authentication with TACAS
+
 ### Configuring the TACACS Host(s) and Shared Secret
-Before NSO can perform external authentication to the TACACS server, it needs to know the address of the host as well as the shared-secret to use when communicating.  Rather than baking these into the script, or requiring they be set on the underlying Linux host running NSO, these values are stored in the NSO CDB and read from it.  
+Before NSO can perform external authentication to the TACACS server, it needs to know the address of the host
+as well as the shared-secret to use when communicating.  Rather than backing these into the script, or requiring
+that they are set on the underlying Linux host running NSO, these values are stored in the NSO CDB.  
 
 They are configured in NSO like this
 
@@ -38,16 +52,16 @@ tacacs-auth secret MyTACACSSecret
 commit
 ```
 
-Note that more than one TACACS host can be configured.  The external authentication script will attempt to authenticate with the hosts in the order they are stored in the CDB.  If a successfull authentication is achieved on a host, that host will be used for authorizing the user.  If an attempt to authenticate to a host fails for any reason, the next host in the list will be tried.  If all hosts fail authentication, authorization is skipped, and the overall external authentication will fail.
+Note that more than one TACACS host can be configured.  The external authentication script will attempt
+to authenticate with the hosts in the order they are stored in the CDB.  If a successfull authentication
+is achieved on a host, that host will be used for authorizing the user.  If an attempt to authenticate
+to a host fails for any reason, the next host in the list will be tried.
+If all hosts fail authentication, authorization is skipped, and the overall external authentication will fail.
 
-### Enabling External Authentication in `ncs.conf`
-NSO needs to be enabled to use/try external authentication within the `ncs.conf` file. This is done within the `<aaa></aaa>` configuration block, and requires two settings. 
-
-1. `<enabled>true</enabled>` 
-1. `<executable>scriptpath.py</executable>`
-    * The path used here must be the exact path to the `tacacs_ext_auth.py` script located within the packages directory.
-
-Here is an example of the relevant parts of the `ncs.conf` file. 
+### Enabling External Authentication
+To enable external authentication the NSO base configuration defined in _ncs.conf_ must include an _<external-authentication>_
+definition under the _<aaa>_ configuration and provide path to the authentication executable. It also should provide
+order of authentication methods in case multiple methods are enabled, because the default order is different:
 
 ```xml
 <?xml version="1.0"?>
@@ -55,27 +69,30 @@ Here is an example of the relevant parts of the `ncs.conf` file.
   <aaa>
     <external-authentication>
       <enabled>true</enabled>
-      <executable>/var/opt/ncs/packages/tacacs-auth/python/tacacs_auth/tacacs_ext_auth.py</executable>
+      <executable>./scripts/python/tacacs_auth.py</executable>
     </external-authentication>
     <local-authentication>
       <enabled>true</enabled>
     </local-authentication>
+    <auth-order>external-authentication local-authentication pam</auth-order>
   </aaa>
 </ncs-config>  
 ```
 
-> Note: in the example `local-authentication` is also enabled.  This could be disabled once the external-authentication is configured, tested, and trusted.  Or you can leave `local-authentication` enabled as a secondary access method.
+> Note. In the example `local-authentication` is also enabled.
+This could be disabled once the external-authentication is configured, tested, and trusted.
+Or you can leave `local-authentication` enabled as a secondary access method.
 
 ### Logging into NSO with External Authentication
-With the `tacacs-auth` configured, and `ncs.conf` configured to enable external authentication, we can now try to log into NSO with the external credentials. 
-
-First, we'll try logging in with a user who has both `ncsadmin` and `ncsoper` writes. 
+With the `tacacs-auth` configured, and `ncs.conf` configured to enable external authentication,
+we can now try to log into NSO with the external credentials. First, need try login with a user,
+who has both `ncsadmin` and `ncsoper` rights. 
 
 ```
 ssh jdoe@nso
 jdoe@nso's password: 
 
-# Try a basic "show" command
+# Try basic "show" command
 jdoe@ncs# show packages package oper-status 
 packages package tacacs-auth
  oper-status up
@@ -130,7 +147,8 @@ Possible completions:
   commit            Commit current set of changes
 ```
 
-User `bsmith` only has `user` and `webui` listed.  These show up in the list due to how their models are setup, but attemps to actually configure something under them result in `access-denied`.
+User `bsmith` only has `user` and `webui` listed.  These show up in the list due to how their models are setup,
+but attempts to actually configure something under them result in `access-denied`.
 
 ```
 bsmith@ncs(config)# user test
