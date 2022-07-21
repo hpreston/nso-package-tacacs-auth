@@ -9,9 +9,6 @@ module tacacs-config {
   import tailf-common {
     prefix tailf;
   }
-  import tailf-ncs {
-    prefix ncs;
-  }
 
   description
     "External Auth with TACACS configuration details";
